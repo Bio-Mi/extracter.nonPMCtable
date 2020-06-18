@@ -1,2 +1,2 @@
 # table.extracter.nonPMC
-table.extracter.nonPMC
+Table.extracter.nonPMC
