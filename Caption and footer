@@ -1,3 +1,17 @@
+# coding: utf-8
+import os
+import re
+from html.parser import HTMLParser
+from bs4 import BeautifulSoup
+from bs4 import element
+from itertools import product
+import numpy as np
+import pandas as pd
+import argparse
+import nltk
+import json
+from utils import *
+
 # Select table
 table_num =0
 table = soup.find_all('table',recursive=True)[table_num]#
