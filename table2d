@@ -1,0 +1,31 @@
+def table_to_2d(t):
+    # https://stackoverflow.com/questions/48393253/how-to-parse-table-with-rowspan-and-colspan
+    
+    rows = t.find_all('tr')
+
+    # first scan, see how many columns we need
+    rowh = t.find('thead').findAll('tr')
+    s= rowh
+    newls=[]
+    for x in s:
+        newls.append((x))
+    
+    newstr= str(newls)
+    emp= 0
+    num1=0
+    num=0
+    if re.findall('.colspan..(\d+)', newstr) != None:   
+        n= re.findall('.colspan..(\d+)', newstr)
+        num= sum(int(n[i]) for i in range(len(n)))
+    
+    if re.findall('>.<', newstr) != None:
+        n= re.findall('>.<', newstr)
+        emp= len(n)    
+    else:
+        n= re.findall('colsep0', newstr)
+        num1= len(n)
+
+    tot= emp + num + num1
+    # build an empty matrix for all possible cells
+    rows = t.find_all('tr')
+    table = [[''] * tot for row in rows]
