@@ -72,8 +72,6 @@ def table_to_2d(t):
                 except IndexError:
                     # rowspan or colspan outside the confines of the table
                     pass
-
-       
         # update rowspan bookkeeping
         rowspans = {c: s - 1 for c, s in rowspans.items() if s > 1}
 
