@@ -65,6 +65,12 @@ def table_to_2d(t):
             if re.match('((\d+.\d+)|(\d+))e([−-]{0,1}\d+)',value):
                 value = str(value)
             
+            #superscript after log 10 
+            if re.search('.*log\s\d\w(\d+).*', value):
+                v= re.search('(.*log\s\d\w)(\d+)(.*)', value)
+                SUP = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+                value = v.group(1) + v.group(2).translate(SUP) + v.group(3)
+            
             for drow, dcol in product(range(rowspan), range(colspan)):
                 try:
                     table[row_idx + drow][col_idx + dcol] = value
