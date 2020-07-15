@@ -16,8 +16,7 @@ from utils import *
 def table_to_2d(t):
     rows = t.find_all('tr')
     
-    # How many col we have (assume no superrow)
-    #ftrow= t.thead.tr.find_all('th') 
+    # How many columns in the table
     
     ftrow= [str(link.get('colspan')) for link in t.tbody.tr.find_all('td')]
     for n, i in enumerate(ftrow):
@@ -25,11 +24,15 @@ def table_to_2d(t):
             ftrow[n] = '1'
     col_n = sum([int(i) for i in ftrow])       
     
-    # build an empty matrix for all possible cells
-    rows = t.find_all('tr')
+    # Build an empty matrix for all possible cells
+    if t.thead:                                                # to account 'tr' of thead and tbody only 
+        rows = t.thead.find_all('tr') + t.tbody.find_all('tr')
+    else:                                                      #some table doesnot have thead tag
+        rows = t.tbody.find_all('tr')
+    #Build
     table = [[''] * col_n for row in rows]
 
-    # fill matrix from row data
+    # Fill matrix from row date
     rowspans = {}  # track pending rowspans, column number mapping to count
     for row_idx, row in enumerate(rows):
         span_offset = 0  # how many columns are skipped due to row and colspans 
@@ -40,7 +43,7 @@ def table_to_2d(t):
                 span_offset += 1
                 col_idx += 1
         
-            # fill table data
+            # fill table data 
             if not cell.get('colspan'):
                 colspan = 1
             else:
@@ -51,26 +54,29 @@ def table_to_2d(t):
             else:
                 rowspan= int(cell.get('rowspan'))
     
-            # next column is offset by the colspan AND get rid of white space
+            # Next column is offset by the colspan
             span_offset += colspan - 1
             value= cell.get_text()
             
-            # clean the cell
-            value = value.strip().replace('\u2009',' ').replace('_','^').replace('\xa0',' ').replace('         ','').replace('\n','').replace('            ','').replace(' × 10_','e').replace('×10_','e')
+            # Clean the cell
+            #To remove all potential whitespace
+            value = value.strip().replace('\u2005',' ').replace('\u2010','').replace('\u2009',' ').replace('   ','').replace('\xa0',' ').replace('         ','').replace('\n','').replace('            ','')
             
             if value.startswith('(') and value.endswith(')'):
                 value = value[1:-1]
-            if re.match('((\d+.\d+)|(\d+))[\s{0,1}][××][\s{0,1}]10_([−-]{0,1})(\d+)',value):
-                value = value.replace(' × 10_','e').replace('×10_','e').replace('−','-')
+            #To alter x 10 to e
+            if re.match('.*((\d+.\d+)|(\d+))[\s{0,1}][××][\s{0,1}]10([_–−-]{0,1})(.?\d+)',value):
+                value = value.replace(' × 10_','e').replace('×10_','e').replace('× 10','e').replace('−','-').replace(' ','').replace('–','-')   
+            
+            #To change log 10^-3 to log 10E-3
+            if re.search('log\s?\d+_\s?\d+',value):
+                l= re.search('(.*log\s?\d+)_\s?(\d+.*)',value)
+                value = l.group(1)+ str('E') + l.group(2) 
+                
             if re.match('((\d+.\d+)|(\d+))e([−-]{0,1}\d+)',value):
                 value = str(value)
             
-            #superscript after log 10 
-            if re.search('.*log\s\d\w(\d+).*', value):
-                v= re.search('(.*log\s\d\w)(\d+)(.*)', value)
-                SUP = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
-                value = v.group(1) + v.group(2).translate(SUP) + v.group(3)
-            
+    
             for drow, dcol in product(range(rowspan), range(colspan)):
                 try:
                     table[row_idx + drow][col_idx + dcol] = value
@@ -78,6 +84,8 @@ def table_to_2d(t):
                 except IndexError:
                     # rowspan or colspan outside the confines of the table
                     pass
+
+       
         # update rowspan bookkeeping
         rowspans = {c: s - 1 for c, s in rowspans.items() if s > 1}
 
