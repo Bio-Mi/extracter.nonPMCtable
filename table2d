@@ -306,8 +306,7 @@ if __name__=='__main__':
     file_list = get_files(base_dir)
 
     # # Load Soup
-    filepath = file_list[pbs_index]
-    pmc = filepath.split('/')[-1].strip('.html')
+    filepath =  '' # add directory of file
     with open(filepath,'r') as f:
             text = f.read()
     soup = BeautifulSoup(text, 'html.parser')
