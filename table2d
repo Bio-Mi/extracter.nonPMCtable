@@ -8,7 +8,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-filepath= str(input('Enter the diractory of nonPMC file: '))
+filepath= str(input('Enter the directory of nonPMC file: '))
 #filepath =  '../Desktop/27958378_table_2.html'
 
 table_num= int(input('Enter the number of aimed table \n 0 with linked table file : '))
