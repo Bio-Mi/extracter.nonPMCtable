@@ -86,8 +86,8 @@ def table_to_2d(t):
             
             if value.startswith('(') and value.endswith(')'):
                 value = value[1:-1]
-            #To alter x 10 to e
-            if re.match('.*((\d+.\d+)|(\d+))[\s{0,1}][××][\s{0,1}]10([_–−-]{0,1})(.?\d+)',value):
+            #To alter x 10 to e  
+            if re.match('.*((\d+.\d+)|(\d+))[\s{0,1}][*××xX][\s{0,1}]10_([_–−-]{0,1})(.?\d+)',value):
                 value = value.replace(' × 10_','e').replace('×10_','e').replace('× 10','e').replace('−','-').replace(' ','').replace('–','-')   
             
             #To change log 10^-3 to log 10E-3
