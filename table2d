@@ -26,30 +26,8 @@ def process_em(soup):
             em.extract()
         else:
             em.string.replace_with('{} '.format(s))
-# Load table
-filepath =  '' # add directory of file
 
-with open(filepath,'r') as f:
-        text = f.read()
-soup = BeautifulSoup(text, 'html.parser')
 
-for e in soup.find_all(attrs={'style':['display:none','visibility:hidden']}):
-    e.extract()
-
-# what to do with in sentence reference
-for ref in soup.find_all(class_=['supplementary-material','figpopup','popnode','bibr']):
-    ref.extract()
-
-process_supsub(soup)
-process_em(soup)
-
-# Type the number of aimed table 
-table_num = 
-table = soup.find_all('table',recursive=True)[table_num]
-
-# Add the caption and footer form guides sheet 
-caption = 
-footer= 
 
 # find header rows
 eader_idx = []
@@ -352,8 +330,9 @@ if __name__=='__main__':
 
         try:
         # ## caption and footer
-            caption = table.find_previous('div','caption').get_text()
-            footer = [i.get_text() for i in table.parent.find_next_siblings('div','tblwrap-foot')]
+        # Add the caption and footer form guides sheet 
+            caption =
+            footer=
 
             header_idx = []
             for idx,row in enumerate(table.findAll('tr')):
@@ -393,35 +372,35 @@ if __name__=='__main__':
                         row.pop(0)
 
             ## Identify subheaders
-            value_idx = [i for i in range(len(table_2d)) if i not in header_idx+superrow_idx]
-            col_type = []
-            for col_idx in range(len(table_2d[0])):
-                cur_col = [i[col_idx] for i in table_2d]
-                num_cnt = 0
-                txt_cnt = 0
-                mix_cnt = 0
-                for cell in cur_col:
-                    cell = cell.lower()
-                    if cell in ['none', '', '-',]:
-                        continue
-                    elif is_number(cell):
-                        num_cnt+=1
-                    elif is_mix(cell):
-                        mix_cnt+=1
-                    elif is_text(cell):
-                        txt_cnt+=1
-                if max(num_cnt,txt_cnt,mix_cnt)==num_cnt:
-                    col_type.append('num')
-                elif max(num_cnt,txt_cnt,mix_cnt)==txt_cnt:
-                    col_type.append('txt')
-                else:
-                    col_type.append('mix')
-            subheader_idx = []
+        value_idx = [i for i in range(len(table_2d)) if i not in header_idx+superrow_idx]
+        col_type = []
+        for col_idx in range(len(table_2d[0])):
+            cur_col = [i[col_idx] for i in table_2d]
+            num_cnt = 0
+            txt_cnt = 0
+            mix_cnt = 0
+            for cell in cur_col:
+                cell = str(cell).lower()
+                if cell in ['none', '', '-',]:
+                    continue
+                elif is_number(cell):
+                    num_cnt+=1
+                elif is_mix(cell):
+                    mix_cnt+=1
+                elif is_text(cell):
+                    txt_cnt+=1
+            if max(num_cnt,txt_cnt,mix_cnt)==num_cnt:
+                col_type.append('num')
+            elif max(num_cnt,txt_cnt,mix_cnt)==txt_cnt:
+                col_type.append('txt')
+            else:
+                col_type.append('mix')
+        subheader_idx = []
             for row_idx in value_idx:
                 cur_row = table_2d[row_idx]
                 unmatch_cnt = 0
                 for col_idx in range(len(cur_row)):
-                    cell = cur_row[col_idx].lower()
+                    cell = str(cur_row[col_idx]).lower()
                     if is_text(cell) and col_type[col_idx]!='txt' and cell not in ['none', '', '-',]:
                         unmatch_cnt+=1
                 if unmatch_cnt>=len(cur_row)/2:
