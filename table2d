@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
+from IPython import display
 import os
 import re
 from html.parser import HTMLParser
@@ -8,11 +7,56 @@ from bs4 import element
 from itertools import product
 import numpy as np
 import pandas as pd
-import argparse
-import nltk
-import json
-from utils import *
 
+# Superscripts and subscripts
+def process_supsub(soup):
+    for sup in soup.find_all(['sup','sub']):
+        s = sup.get_text()
+        if sup.string==None:
+            sup.extract()
+        elif re.match('[_-]',s):
+            sup.string.replace_with('{} '.format(s))
+        else:
+            sup.string.replace_with('_{} '.format(s))
+
+def process_em(soup):
+    for em in soup.find_all('em'):
+        s = em.get_text()
+        if em.string==None:
+            em.extract()
+        else:
+            em.string.replace_with('{} '.format(s))
+# Load table
+filepath =  '' # add directory of file
+
+with open(filepath,'r') as f:
+        text = f.read()
+soup = BeautifulSoup(text, 'html.parser')
+
+for e in soup.find_all(attrs={'style':['display:none','visibility:hidden']}):
+    e.extract()
+
+# what to do with in sentence reference
+for ref in soup.find_all(class_=['supplementary-material','figpopup','popnode','bibr']):
+    ref.extract()
+
+process_supsub(soup)
+process_em(soup)
+
+# Type the number of aimed table 
+table_num = 
+table = soup.find_all('table',recursive=True)[table_num]
+
+# Add the caption and footer form guides sheet 
+caption = 
+footer= 
+
+# find header rows
+eader_idx = []
+for idx,row in enumerate(table.findAll('tr')):
+    if row.findAll('th'):
+        header_idx.append(idx)
+    
 def table_to_2d(t):
     rows = t.find_all('tr')
     
