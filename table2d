@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 from IPython import display
 import os
 import re
@@ -8,11 +11,11 @@ from itertools import product
 import numpy as np
 import pandas as pd
 
-filepath= str(input('Enter the directory of nonPMC file: '))
+filepath= str(input('Enter the diractory of nonPMC file: '))
 #filepath =  '../Desktop/27958378_table_2.html'
 
-table_num= int(input('Enter the number of aimed table \n 0 with linked table file : '))
-
+table_num= int(input('Enter the number of aimed table \n 1 with linked table file : '))
+C= table_num -1
 # # Superscripts and subscripts
 
 def process_supsub(soup):
@@ -37,7 +40,7 @@ def process_em(soup):
 
 # # Load table
 
-def nonPMC_file(filepath,table_num ):
+def nonPMC_file(filepath,C):
 
     with open(filepath,'r') as f:
             text = f.read()
@@ -64,9 +67,13 @@ table= nonPMC_file(filepath,table_num)
 
 
 # Enter caption and footer as guide 
-caption = table.find_previous('h1','c-article-table-title u-h1').get_text()
-footer= [i.get_text().strip()  for i in table.find_next('div','c-article-table-footer')]
+caption= input('Enter caption = ')
+#caption = table.find_previous('h1','c-article-table-title u-h1').get_text()
+footer= input('Enter footer = ')
+#footer= [i.get_text().strip()  for i in table.find_next('div','c-article-table-footer')]
 
+if not footer:
+	pass
 
 # ## find header rows
 
@@ -332,6 +339,7 @@ if  superrow_idx==[]:
 
 
 
+
 # ## store in json
 
 def get_headers(t):
@@ -507,9 +515,13 @@ new_json = {'tables':tables}
 
 
 
-file_name= str(input('Enter the name of new file with .JSON: '))
+file_name= str(input('Enter the name of JSON file : '))
 
 import json
-
-with open(file_name, "w") as outfile: 
+x = file_name + str('.json')
+with open(x, "w") as outfile: 
     json.dump(new_json, outfile) 
+
+
+
+
