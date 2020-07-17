@@ -10,12 +10,10 @@ from bs4 import element
 from itertools import product
 import numpy as np
 import pandas as pd
+import nltk 
 
-filepath= str(input('Enter the diractory of nonPMC file: '))
-#filepath =  '../Desktop/27958378_table_2.html'
 
-table_num= int(input('Enter the number of aimed table \n 1 with linked table file : '))
-C= table_num -1
+
 # # Superscripts and subscripts
 
 def process_supsub(soup):
@@ -35,56 +33,6 @@ def process_em(soup):
             em.extract()
         else:
             em.string.replace_with('{} '.format(s))
-            
-
-
-# # Load table
-
-def nonPMC_file(filepath,C):
-
-    with open(filepath,'r') as f:
-            text = f.read()
-    soup = BeautifulSoup(text, 'html.parser')
-
-    for e in soup.find_all(attrs={'style':['display:none','visibility:hidden']}):
-        e.extract()
-
-    # what to do with in sentence reference
-    for ref in soup.find_all(class_=['supplementary-material','figpopup','popnode','bibr']):
-        ref.extract()
-
-    process_supsub(soup)
-    process_em(soup)
-
-    table = soup.find_all('table',recursive=True)[table_num]
-    return table
-
-
-table= nonPMC_file(filepath,table_num)
-
-
-# ### caption and footer
-
-
-# Enter caption and footer as guide 
-caption= input('Enter caption = ')
-#caption = table.find_previous('h1','c-article-table-title u-h1').get_text()
-footer= input('Enter footer = ')
-#footer= [i.get_text().strip()  for i in table.find_next('div','c-article-table-footer')]
-
-if not footer:
-	pass
-
-# ## find header rows
-
-header_idx = []
-for idx,row in enumerate(table.findAll('tr')):
-    if row.findAll('th'):
-        header_idx.append(idx)
-
-
-# ## span table to single-cells
-
 def table_to_2d(t):
     rows = t.find_all('tr')
     
@@ -162,27 +110,13 @@ def table_to_2d(t):
         rowspans = {c: s - 1 for c, s in rowspans.items() if s > 1}
 
     return table
-
-table_2d = table_to_2d(table)
-# ## find superrows
-
+		
 def check_superrow(row):
     if len(set([i for i in row if (str(i)!='')&(str(i)!='\n')&(str(i)!='None')]))==1:
         return True
     else:
         return False
-
-
-superrow_idx = []
-if table_2d!=None:
-    for row_idx,row in enumerate(table_2d):
-        if row_idx not in header_idx:
-            if check_superrow(row):
-                superrow_idx.append(row_idx)
-
-
-# # Identify subheaders
-
+		
 def is_number(s):
     try:
         float(s.replace(',',''))
@@ -200,57 +134,6 @@ def is_text(s):
     if any(char.isdigit() for char in s):
         return False
     return True
-
-
-value_idx = [i for i in range(len(table_2d)) if i not in header_idx+superrow_idx]
-col_type = []
-for col_idx in range(len(table_2d[0])):
-    cur_col = [i[col_idx] for i in table_2d]
-    num_cnt = 0
-    txt_cnt = 0
-    mix_cnt = 0
-    for cell in cur_col:
-        cell = str(cell).lower()
-        if cell in ['none', '', '-',]:
-            continue
-        elif is_number(cell):
-            num_cnt+=1
-        elif is_mix(cell):
-            mix_cnt+=1
-        elif is_text(cell):
-            txt_cnt+=1
-    if max(num_cnt,txt_cnt,mix_cnt)==num_cnt:
-        col_type.append('num')
-    elif max(num_cnt,txt_cnt,mix_cnt)==txt_cnt:
-        col_type.append('txt')
-    else:
-        col_type.append('mix')
-subheader_idx = []
-for row_idx in value_idx:
-    cur_row = table_2d[row_idx]
-    unmatch_cnt = 0
-    for col_idx in range(len(cur_row)):
-        cell = str(cur_row[col_idx]).lower()
-        if is_text(cell) and col_type[col_idx]!='txt' and cell not in ['none', '', '-',]:
-            unmatch_cnt+=1
-    if unmatch_cnt>=len(cur_row)/2:
-        subheader_idx.append(row_idx)
-header_idx+=subheader_idx
-
-subheader_idx = []
-tmp = [header_idx[0]]
-for i,j in zip(header_idx,header_idx[1:]):
-    if j==i+1:
-        tmp.append(j)
-    else:
-        subheader_idx.append(tmp)
-        tmp=[j]
-subheader_idx.append(tmp)
-
-
-# ## split pattern
-
-import nltk 
 
 def find_format(header):
 #     parts = nltk.tokenize.word_tokenize(header)
@@ -289,58 +172,8 @@ def test_format(pattern,s):
     return False
 
 def split_format(pattern,s):
-#     return pattern.split(s)[1:-1]
-#     return [i for i in pattern.split(s) if i not in ':|\/,;']
-    return [i for i in re.split(r'[:|/,;]', s) if i not in ':|\/,;']
+	return [i for i in re.split(r'[:|/,;]', s) if i not in ':|\/,;']
 
-
-for col_idx,th in enumerate(table_2d[header_idx[-1]]):
-
-    print("\rProgress {:2.1%}".format(col_idx / len(table_2d[header_idx[-1]])))
-    display.clear_output(wait=True)
-    [i.get_text().strip().replace('_','') for i in table.find_next_siblings('p','TableText')]
-    pattern = find_format(th)
-    if pattern:
-        cnt = 0
-        for row_idx in range(len(table_2d)):
-            if (row_idx not in header_idx)&(row_idx not in superrow_idx):
-                cnt+=test_format(pattern,table_2d[row_idx][col_idx])
-        # if all elements follow the same pattern
-        if cnt==len(table_2d)-len(header_idx)-len(superrow_idx):
-            for row_idx,row in enumerate(table_2d):
-                if (row_idx in header_idx)&(row_idx!=header_idx[-1]):
-                    row+=[table_2d[row_idx][col_idx],table_2d[row_idx][col_idx]]
-                elif (row_idx in header_idx)&(row_idx==header_idx[-1]):
-                    row+=split_format(pattern,row[col_idx])
-                elif row_idx in superrow_idx:
-                    row+=[table_2d[row_idx][col_idx],table_2d[row_idx][col_idx]]
-                else:
-                    row+=split_format(pattern,row[col_idx])
-    pattern=None
-    cnt = 0
-
-
-# make sure that all rows have the same length
-assert len(set([len(i) for i in table_2d]))==1
-
-
-# # Index sections
-
-# In[32]:
-
-
-if  superrow_idx==[]:
-    first_col = [row[0] for row in table_2d if table_2d.index(row) not in header_idx]
-    unique_vals = set([i for i in first_col if i not in [' ','None']])
-    section_values = None
-    if len(unique_vals)<=len(first_col)/2:
-        section_values = list(unique_vals)
-    print(section_values)
-
-
-
-
-# ## store in json
 
 def get_headers(t):
     idx_list = []
@@ -356,7 +189,6 @@ def get_superrows(t):
             if check_superrow(row):
                 idx_list.append(idx)
     return idx_list
-
 
 def table2json(table_2d, header_idx, subheader_idx, superrow_idx, table_num, caption, footer):
     tables = []
@@ -398,31 +230,9 @@ def table2json(table_2d, header_idx, subheader_idx, superrow_idx, table_num, cap
     if len(tables)>1:
         for table_idx,table in enumerate(tables):
             table['identifier'] += '.{}'.format(table_idx+1)
-    return tables
+    return tables		    
 
-
-cur_table = table2json(table_2d, header_idx, subheader_idx, superrow_idx, table_num, caption, footer)
-
-
-# # merge headers
-
-
-sep = '<!>'
-for table in cur_table:
-    headers = table['columns']
-
-    new_header = []
-    for col_idx in range(len(headers[0])):
-        new_element = ''
-        for r_idx in range(len(headers)):
-            new_element += headers[r_idx][col_idx]+sep
-        new_element = new_element.rstrip(sep)
-        new_header.append(new_element)
-    table['columns'] = new_header
-
-
-# # Obsolete
-
+		
 def table2dict(table_2d):
     headers = [table_2d[i] for i in header_idx]
     tmp_list = []
@@ -441,86 +251,205 @@ def table2dict(table_2d):
                                  'table_num':table_num,
                                  'foot':footer, 
                                  'caption':caption,})
-    return tmp_list
+    return tmp_list			
 
 
-
-table_json = table2dict(table_2d)
-
-# 1. process every headers
-# 2. split multi table first, then process headers in each sub-table
-
-# ## Merge headers
-
-sep = '<!>'
-
-for row in table_json:
-    headers = row['headers']
-    
-    new_header = []
-    for col_idx in range(len(headers[0])):
-        new_element = ''
-        for r_idx in range(len(headers)):
-            new_element += headers[r_idx][col_idx]+sep
-        new_element = new_element.rstrip(sep)
-        new_header.append(new_element)
-    row['headers'] = new_header
+filepath= str(input('Enter the name of nonPMC file: '))
+#filepath =  '../Desktop/27958378_table_2.html'
 
 
-# # Update Json Model
+with open(filepath,'r') as f:
+        text = f.read()
+soup = BeautifulSoup(text, 'html.parser')
 
 tables = []
 
-def update_json(table_json, table_num, caption, footer):
-    pre_header = None
-    pre_superrow = None
+for table_num, table in enumerate(soup.find_all('table',recursive=True)): 
 
-    table = []
-    for i in table_json:
-        cur_header = i['headers']
-        cur_supperrow = i['superrow']
-        if cur_supperrow!='':
-            cur_supperrow = [x for x in cur_supperrow if x not in ['','None']][0]
-        if cur_header!=pre_header:
-            section = []
-            table.append({'identifier':table_num, 
-                          'title':caption, 
-                          'columns':cur_header,
-                          'section':section,
-                          'footer':footer})
-        elif cur_header==pre_header:
-            section = table[-1]['section']
+        # ### caption and footer
+        # Enter caption and footer as guide 
+        if  table.find_previous('div','inline-table__head'):
+            caption =  table.find_previous('div','inline-table__head').get_text().replace('\xa0',' ').replace('\n','').replace('            ','')
+        else:
+            caption = ' '#table.find('caption').get_text()
+        if table.find_next_siblings('div','inline-table__tail'):
+            footer= [i.get_text().strip() for i in table.find_next_siblings('div','inline-table__tail')]
+        else:
+            footer = ' '
+        
+        header_idx = []
+        for idx,row in enumerate(table.findAll('tr')):
+            if row.findAll('th'):
+                header_idx.append(idx)
 
-        results = i['row']
-        section_name = cur_supperrow
-        if cur_supperrow!=pre_superrow:
-            section.append({'section_name':section_name, 
-                            'results': [results]})
-        elif cur_supperrow==pre_superrow:
+        # ## span table to single-cells
 
-            section[-1]['results'].append(results)
-
-        pre_header = cur_header
-        pre_superrow = cur_supperrow
-
-    return table
+        table_2d = table_to_2d(table)
+        # ## find superrows
 
 
+        superrow_idx = []
+        if table_2d!=None:
+            for row_idx,row in enumerate(table_2d):
+                if row_idx not in header_idx:
+                    if check_superrow(row):
+                        superrow_idx.append(row_idx)
 
-cur_table = update_json(table_json, table_num, caption, footer)
-tables+=cur_table
+        # # Identify subheaders
 
-new_json = {'tables':tables}
+        value_idx = [i for i in range(len(table_2d)) if i not in header_idx+superrow_idx]
+        col_type = []
+        for col_idx in range(len(table_2d[0])):
+            cur_col = [i[col_idx] for i in table_2d]
+            num_cnt = 0
+            txt_cnt = 0
+            mix_cnt = 0
+            for cell in cur_col:
+                cell = str(cell).lower()
+                if cell in ['none', '', '-',]:
+                    continue
+                elif is_number(cell):
+                    num_cnt+=1
+                elif is_mix(cell):
+                    mix_cnt+=1
+                elif is_text(cell):
+                    txt_cnt+=1
+            if max(num_cnt,txt_cnt,mix_cnt)==num_cnt:
+                col_type.append('num')
+            elif max(num_cnt,txt_cnt,mix_cnt)==txt_cnt:
+                col_type.append('txt')
+            else:
+                col_type.append('mix')
+        subheader_idx = []
+        for row_idx in value_idx:
+            cur_row = table_2d[row_idx]
+            unmatch_cnt = 0
+            for col_idx in range(len(cur_row)):
+                cell = str(cur_row[col_idx]).lower()
+                if is_text(cell) and col_type[col_idx]!='txt' and cell not in ['none', '', '-',]:
+                    unmatch_cnt+=1
+            if unmatch_cnt>=len(cur_row)/2:
+                subheader_idx.append(row_idx)
+        header_idx+=subheader_idx
+
+        subheader_idx = []
+        
+        if header_idx:
+            tmp = [header_idx[0]] 
+        
+
+        for i,j in zip(header_idx,header_idx[1:]):
+            if j==i+1:
+                tmp.append(j)
+            else:
+                subheader_idx.append(tmp)
+                tmp=[j]
+        subheader_idx.append(tmp)
+
+       
+        # ## split pattern
+        if header_idx:
+            try:
+                for col_idx,th in enumerate(table_2d[header_idx[-1]]):
+                    print("\rProgress {:2.1%}".format(col_idx / len(table_2d[header_idx[-1]])))
+                    display.clear_output(wait=True)
+                if table.find_next_siblings('p','TableText'):
+                    [i.get_text().strip().replace('_','') for i in table.find_next_siblings('p','TableText')]
+                    pattern = find_format(th)
+                    if pattern:
+                        cnt = 0
+                        for row_idx in range(len(table_2d)):
+                            if (row_idx not in header_idx)&(row_idx not in superrow_idx):
+                                cnt+=test_format(pattern,table_2d[row_idx][col_idx])
+                        # if all elements follow the same pattern
+                        if cnt==len(table_2d)-len(header_idx)-len(superrow_idx):
+                            for row_idx,row in enumerate(table_2d):
+                                if (row_idx in header_idx)&(row_idx!=header_idx[-1]):
+                                    row+=[table_2d[row_idx][col_idx],table_2d[row_idx][col_idx]]
+                                elif (row_idx in header_idx)&(row_idx==header_idx[-1]):
+                                    row+=split_format(pattern,row[col_idx])
+                                elif row_idx in superrow_idx:
+                                    row+=[table_2d[row_idx][col_idx],table_2d[row_idx][col_idx]]
+                                else:
+                                    row+=split_format(pattern,row[col_idx])
+                    pattern=None
+                    cnt = 0
+            except:
+
+                # make sure that all rows have the same length
+                assert len(set([len(i) for i in table_2d]))==1
+        else:
+            continue
+
+                # # Index sections
+
+                # In[32]:
+
+
+        if  superrow_idx==[]:
+            first_col = [row[0] for row in table_2d if table_2d.index(row) not in header_idx]
+            unique_vals = set([i for i in first_col if i not in [' ','None']])
+            section_values = None
+        if len(unique_vals)<=len(first_col)/2:
+            section_values = list(unique_vals)
+            print(section_values)
+
+                # ## store in json
+
+            cur_table = table2json(table_2d, header_idx, subheader_idx, superrow_idx, table_num, caption, footer)
+
+                # # merge headers
+
+            sep = '<!>'
+            for table in cur_table:
+                headers = table['columns']
+
+                new_header = []
+                if header_idx:
+                    for col_idx in range(len(headers[0])):
+                        new_element = ''
+                        for r_idx in range(len(headers)):
+                            new_element += headers[r_idx][col_idx]+sep
+                            new_element = new_element.rstrip(sep)
+                            new_header.append(new_element)
+                        table['columns'] = new_header
+
+
+        # # Obsolete
+
+        table_json = table2dict(table_2d)
+
+        # 1. process every headers
+        # 2. split multi table first, then process headers in each sub-table
+
+        # ## Merge headers
+
+        # # Update Json Model
+
+        cur_table =  table2json(table_2d, header_idx, subheader_idx, superrow_idx, table_num, caption, footer)
+        tables+=cur_table
+
+
+
+table_json = {'tables':tables}
+
+
+if not tables:
+    print('no tables')
+
+else:
+
+    file_name= str(input('Enter the name of new file with .JSON: '))
+    z= file_name + str('_tables.json')
+    import json
+
+    with open(z, "w") as outfile: 
+        json.dump(table_json , outfile) 
 
 
 
 
-file_name= str(input('Enter the name of JSON file : '))
 
-import json
-x = file_name + str('.json')
-with open(x, "w") as outfile: 
-    json.dump(new_json, outfile) 
 
 
 
