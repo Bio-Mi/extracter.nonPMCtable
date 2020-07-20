@@ -280,7 +280,8 @@ def filepath(x):
             text = f.read()
     soup = BeautifulSoup(text, 'html.parser')
     return soup
-
+#arrange journal files in seprated folders
+#type the dir here
 
 base_dir = '../withpmc/lined/'
 folders= get_folders(base_dir)
