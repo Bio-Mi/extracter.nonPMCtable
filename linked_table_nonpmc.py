@@ -270,7 +270,8 @@ def filepath(x):
             text = f.read()
     soup = BeautifulSoup(text, 'html.parser')
     return soup
-
+#collect all journal html in a dir
+#type dir here
 base_dir= '../withpmc/linked/'
 file_list = get_files(base_dir)
 #pick up the aimed files in the dict
