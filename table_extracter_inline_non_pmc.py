@@ -374,7 +374,7 @@ if __name__=='__main__':
                         footer = ' '
                 #CELL or (Elsevier) publisher                
                 elif re.match('.*The American Journal of Human Genetics',nam):
-                    if  table.find_previous('div','caption'):
+                    if  table.find_previous('div','inline-table__head'):
                         caption = eval(CELL['CELL']['caption'])
                     else:
                         caption = ' '#table.find('caption').get_text()
